@@ -41,16 +41,104 @@ public class HelloController {
     public ResponseEntity<?> createUser(
             @RequestBody @Valid User user) {
 
-        User savedUser = userService.saveUser(user);
+        /*
+         * IMPORTANT:
+         *
+         * These values must always be controlled
+         * by the server.
+         *
+         * A visitor must not be able to submit:
+         *
+         * status = APPROVED
+         *
+         * or a fake access token.
+         */
 
-        Map<String, Object> response = new HashMap<>();
+        user.setStatus("PENDING");
+        user.setAccessToken(null);
 
-        response.put("id", savedUser.getId());
+
+        /*
+         * Validate the selected employee.
+         */
+
+        String assignedEmployeeId =
+                user.getAssignedEmployeeId();
+
+        if (
+                assignedEmployeeId == null ||
+                assignedEmployeeId.isBlank()
+        ) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body("Please select an employee.");
+        }
+
+
+        Employee selectedEmployee =
+                employeeService
+                        .getAllEmployees()
+                        .stream()
+                        .filter(employee ->
+                                employee.getEmployeeId()
+                                        .equals(assignedEmployeeId)
+                        )
+                        .findFirst()
+                        .orElse(null);
+
+
+        if (selectedEmployee == null) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body("Selected employee does not exist.");
+        }
+
+
+        /*
+         * Always use the real employee name
+         * from the database.
+         */
+
+        user.setPersonToMeet(
+                selectedEmployee.getName()
+        );
+
+
+        User savedUser =
+                userService.saveUser(user);
+
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+
+        response.put(
+                "id",
+                savedUser.getId()
+        );
+
+
+        /*
+         * Access token is returned ONLY at the
+         * time of registration.
+         *
+         * It is protected from normal JSON serialization
+         * by @JsonIgnore in User.
+         */
 
         response.put(
                 "accessToken",
                 savedUser.getAccessToken()
         );
+
+
+        response.put(
+                "status",
+                savedUser.getStatus()
+        );
+
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -60,26 +148,94 @@ public class HelloController {
 
     // =========================================================
     // VISITOR STATUS CHECK
-    //
-    // IMPORTANT:
-    // Visitor only needs Request ID.
-    // Access token is NOT required here.
     // =========================================================
+
+    /*
+     * Visitor must provide BOTH:
+     *
+     * Request ID
+     * +
+     * Access Token
+     *
+     * Without the token, the request cannot be viewed.
+     */
 
     @GetMapping("/users/{id}/status")
     public ResponseEntity<?> getVisitorStatus(
-            @PathVariable Integer id) {
+            @PathVariable Integer id,
+            @RequestHeader(
+                    value = "X-Access-Token",
+                    required = false
+            ) String accessToken) {
 
-        User user = userService.getUserById(id);
+
+        if (
+                accessToken == null ||
+                accessToken.isBlank()
+        ) {
+
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("Access token required.");
+        }
+
+
+        User user =
+                userService
+                        .getUserByIdAndAccessToken(
+                                id,
+                                accessToken
+                        );
+
+
+        /*
+         * Return 404 instead of telling the user
+         * whether the request ID exists.
+         */
 
         if (user == null) {
 
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
-                    .body("Request with ID " + id + " not found");
+                    .body("Request not found.");
         }
 
-        return ResponseEntity.ok(user);
+
+        Map<String, Object> response =
+                new HashMap<>();
+
+
+        response.put(
+                "id",
+                user.getId()
+        );
+
+
+        response.put(
+                "name",
+                user.getName()
+        );
+
+
+        response.put(
+                "personToMeet",
+                user.getPersonToMeet()
+        );
+
+
+        response.put(
+                "purpose",
+                user.getPurpose()
+        );
+
+
+        response.put(
+                "status",
+                user.getStatus()
+        );
+
+
+        return ResponseEntity.ok(response);
     }
 
 
@@ -97,26 +253,32 @@ public class HelloController {
         List<Employee> employees =
                 employeeService.getAllEmployees();
 
+
         List<Map<String, String>> response =
                 new ArrayList<>();
+
 
         for (Employee employee : employees) {
 
             Map<String, String> employeeData =
                     new HashMap<>();
 
+
             employeeData.put(
                     "employeeId",
                     employee.getEmployeeId()
             );
+
 
             employeeData.put(
                     "name",
                     employee.getName()
             );
 
+
             response.add(employeeData);
         }
+
 
         return ResponseEntity.ok(response);
     }
@@ -131,17 +293,21 @@ public class HelloController {
             @RequestBody Map<String, String> loginData,
             HttpSession session) {
 
+
         String employeeId =
                 loginData.get("employeeId");
 
+
         String password =
                 loginData.get("password");
+
 
         Employee employee =
                 employeeService.login(
                         employeeId,
                         password
                 );
+
 
         if (employee == null) {
 
@@ -152,28 +318,43 @@ public class HelloController {
                     );
         }
 
+
+        /*
+         * Prevent session fixation.
+         *
+         * The session ID is changed after
+         * successful authentication.
+         */
+
+        
+
         session.setAttribute(
                 "employeeId",
                 employee.getEmployeeId()
         );
+
 
         session.setAttribute(
                 "employeeName",
                 employee.getName()
         );
 
+
         Map<String, String> response =
                 new HashMap<>();
+
 
         response.put(
                 "employeeId",
                 employee.getEmployeeId()
         );
 
+
         response.put(
                 "name",
                 employee.getName()
         );
+
 
         return ResponseEntity.ok(response);
     }
@@ -189,6 +370,7 @@ public class HelloController {
 
         session.invalidate();
 
+
         return ResponseEntity.ok(
                 "Logged out successfully"
         );
@@ -203,15 +385,18 @@ public class HelloController {
     public ResponseEntity<?> getLoggedInEmployee(
             HttpSession session) {
 
+
         String employeeId =
                 (String) session.getAttribute(
                         "employeeId"
                 );
 
+
         String employeeName =
                 (String) session.getAttribute(
                         "employeeName"
                 );
+
 
         if (employeeId == null) {
 
@@ -220,34 +405,41 @@ public class HelloController {
                     .body("Not logged in");
         }
 
+
         Map<String, String> response =
                 new HashMap<>();
+
 
         response.put(
                 "employeeId",
                 employeeId
         );
 
+
         response.put(
                 "name",
                 employeeName
         );
+
 
         return ResponseEntity.ok(response);
     }
 
 
     // =========================================================
-    // GET ALL VISITORS / REQUESTS
-    //
-    // EMPLOYEE ONLY
+    // GET EMPLOYEE'S OWN REQUESTS
     // =========================================================
 
     @GetMapping("/users")
     public ResponseEntity<?> getUsers(
             HttpSession session) {
 
-        if (!isEmployeeLoggedIn(session)) {
+
+        String employeeId =
+                getLoggedInEmployeeId(session);
+
+
+        if (employeeId == null) {
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -256,15 +448,28 @@ public class HelloController {
                     );
         }
 
+
+        /*
+         * IMPORTANT:
+         *
+         * The database now returns ONLY requests
+         * assigned to this employee.
+         *
+         * We no longer send every visitor request
+         * to the browser.
+         */
+
         return ResponseEntity.ok(
-                userService.getAllUsers()
+                userService.getUsersForEmployee(
+                        employeeId
+                )
         );
     }
 
 
     // =========================================================
     // GET SINGLE VISITOR
-    // EMPLOYEE ONLY
+    // EMPLOYEE'S OWN REQUEST ONLY
     // =========================================================
 
     @GetMapping("/users/{id}")
@@ -272,7 +477,12 @@ public class HelloController {
             @PathVariable Integer id,
             HttpSession session) {
 
-        if (!isEmployeeLoggedIn(session)) {
+
+        String employeeId =
+                getLoggedInEmployeeId(session);
+
+
+        if (employeeId == null) {
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -281,8 +491,11 @@ public class HelloController {
                     );
         }
 
+
         User user =
-                userService.getUserById(id);
+                userService
+                        .getUserById(id);
+
 
         if (user == null) {
 
@@ -293,13 +506,33 @@ public class HelloController {
             );
         }
 
+
+        /*
+         * Employee can only view
+         * their own assigned request.
+         */
+
+        if (
+                user.getAssignedEmployeeId() == null ||
+                !user.getAssignedEmployeeId()
+                        .equals(employeeId)
+        ) {
+
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(
+                            "You are not authorized to access this request."
+                    );
+        }
+
+
         return ResponseEntity.ok(user);
     }
 
 
     // =========================================================
     // UPDATE VISITOR
-    // EMPLOYEE ONLY
+    // EMPLOYEE'S OWN REQUEST ONLY
     // =========================================================
 
     @PutMapping("/users/{id}")
@@ -308,7 +541,12 @@ public class HelloController {
             @RequestBody @Valid User user,
             HttpSession session) {
 
-        if (!isEmployeeLoggedIn(session)) {
+
+        String employeeId =
+                getLoggedInEmployeeId(session);
+
+
+        if (employeeId == null) {
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -317,11 +555,56 @@ public class HelloController {
                     );
         }
 
+
+        User existingUser =
+                userService.getUserById(id);
+
+
+        if (existingUser == null) {
+
+            throw new ResourceNotFoundException(
+                    "User with ID " +
+                            id +
+                            " not found"
+            );
+        }
+
+
+        /*
+         * Ownership check.
+         */
+
+        if (
+                existingUser.getAssignedEmployeeId()
+                        == null ||
+                !existingUser
+                        .getAssignedEmployeeId()
+                        .equals(employeeId)
+        ) {
+
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(
+                            "You are not authorized to modify this request."
+                    );
+        }
+
+
+        /*
+         * Do not allow an employee to change
+         * ownership or status through this endpoint.
+         */
+
+        user.setAssignedEmployeeId(employeeId);
+        user.setStatus(null);
+
+
         User updatedUser =
                 userService.updateUser(
                         id,
                         user
                 );
+
 
         if (updatedUser == null) {
 
@@ -332,6 +615,7 @@ public class HelloController {
             );
         }
 
+
         return ResponseEntity.ok(
                 updatedUser
         );
@@ -340,7 +624,7 @@ public class HelloController {
 
     // =========================================================
     // DELETE VISITOR
-    // EMPLOYEE ONLY
+    // EMPLOYEE'S OWN REQUEST ONLY
     // =========================================================
 
     @DeleteMapping("/users/{id}")
@@ -348,7 +632,12 @@ public class HelloController {
             @PathVariable Integer id,
             HttpSession session) {
 
-        if (!isEmployeeLoggedIn(session)) {
+
+        String employeeId =
+                getLoggedInEmployeeId(session);
+
+
+        if (employeeId == null) {
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -357,8 +646,45 @@ public class HelloController {
                     );
         }
 
+
+        User existingUser =
+                userService.getUserById(id);
+
+
+        if (existingUser == null) {
+
+            throw new ResourceNotFoundException(
+                    "User with ID " +
+                            id +
+                            " not found"
+            );
+        }
+
+
+        /*
+         * Employee can delete only
+         * their own request.
+         */
+
+        if (
+                existingUser.getAssignedEmployeeId()
+                        == null ||
+                !existingUser
+                        .getAssignedEmployeeId()
+                        .equals(employeeId)
+        ) {
+
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(
+                            "You are not authorized to delete this request."
+                    );
+        }
+
+
         boolean deleted =
                 userService.deleteUser(id);
+
 
         if (!deleted) {
 
@@ -369,6 +695,7 @@ public class HelloController {
             );
         }
 
+
         return ResponseEntity
                 .noContent()
                 .build();
@@ -377,7 +704,7 @@ public class HelloController {
 
     // =========================================================
     // APPROVE VISITOR
-    // EMPLOYEE ONLY
+    // EMPLOYEE'S OWN REQUEST ONLY
     // =========================================================
 
     @PutMapping("/users/{id}/approve")
@@ -385,7 +712,12 @@ public class HelloController {
             @PathVariable Integer id,
             HttpSession session) {
 
-        if (!isEmployeeLoggedIn(session)) {
+
+        String employeeId =
+                getLoggedInEmployeeId(session);
+
+
+        if (employeeId == null) {
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -394,20 +726,24 @@ public class HelloController {
                     );
         }
 
+
         User updatedUser =
-                userService.updateStatus(
+                userService.updateStatusForEmployee(
                         id,
+                        employeeId,
                         "APPROVED"
                 );
 
+
         if (updatedUser == null) {
 
-            throw new ResourceNotFoundException(
-                    "User with ID " +
-                            id +
-                            " not found"
-            );
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(
+                            "You are not authorized to approve this request."
+                    );
         }
+
 
         return ResponseEntity.ok(
                 updatedUser
@@ -417,7 +753,7 @@ public class HelloController {
 
     // =========================================================
     // REJECT VISITOR
-    // EMPLOYEE ONLY
+    // EMPLOYEE'S OWN REQUEST ONLY
     // =========================================================
 
     @PutMapping("/users/{id}/reject")
@@ -425,7 +761,12 @@ public class HelloController {
             @PathVariable Integer id,
             HttpSession session) {
 
-        if (!isEmployeeLoggedIn(session)) {
+
+        String employeeId =
+                getLoggedInEmployeeId(session);
+
+
+        if (employeeId == null) {
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -434,20 +775,24 @@ public class HelloController {
                     );
         }
 
+
         User updatedUser =
-                userService.updateStatus(
+                userService.updateStatusForEmployee(
                         id,
+                        employeeId,
                         "REJECTED"
                 );
 
+
         if (updatedUser == null) {
 
-            throw new ResourceNotFoundException(
-                    "User with ID " +
-                            id +
-                            " not found"
-            );
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(
+                            "You are not authorized to reject this request."
+                    );
         }
+
 
         return ResponseEntity.ok(
                 updatedUser
@@ -456,14 +801,24 @@ public class HelloController {
 
 
     // =========================================================
-    // CHECK EMPLOYEE LOGIN
+    // HELPER
     // =========================================================
 
-    private boolean isEmployeeLoggedIn(
+    private String getLoggedInEmployeeId(
             HttpSession session) {
 
-        return session.getAttribute(
-                "employeeId"
-        ) != null;
+        Object employeeId =
+                session.getAttribute(
+                        "employeeId"
+                );
+
+
+        if (employeeId == null) {
+
+            return null;
+        }
+
+
+        return employeeId.toString();
     }
 }

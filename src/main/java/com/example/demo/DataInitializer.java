@@ -2,12 +2,18 @@ package com.example.demo;
 
 import com.example.demo.model.Employee;
 import com.example.demo.repository.EmployeeRepository;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Configuration
 public class DataInitializer {
+
+    private final BCryptPasswordEncoder passwordEncoder =
+            new BCryptPasswordEncoder();
+
 
     @Bean
     CommandLineRunner initializeEmployees(
@@ -45,30 +51,45 @@ public class DataInitializer {
         };
     }
 
+
     private void createOrUpdateEmployee(
             EmployeeRepository employeeRepository,
             String employeeId,
             String name,
             String password) {
 
-        Employee employee = employeeRepository
-                .findByEmployeeId(employeeId)
-                .orElse(null);
+        Employee employee =
+                employeeRepository
+                        .findByEmployeeId(employeeId)
+                        .orElse(null);
+
 
         if (employee == null) {
 
+            /*
+             * New employee:
+             * Store BCrypt password.
+             */
             employee = new Employee(
                     employeeId,
                     name,
-                    password
+                    passwordEncoder.encode(password)
             );
 
         } else {
 
-            // Keep existing employee ID
-            // but make sure prototype credentials are correct.
             employee.setName(name);
-            employee.setPassword(password);
+
+            /*
+             * Do NOT hash an already-hashed password again.
+             */
+            if (employee.getPassword() == null ||
+                    !employee.getPassword().startsWith("$2")) {
+
+                employee.setPassword(
+                        passwordEncoder.encode(password)
+                );
+            }
         }
 
         employeeRepository.save(employee);
