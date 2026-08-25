@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Visitor & Access Management System</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+    <div class="page-container">
+
+
+        <!-- =========================================================
+             HEADER
+        ========================================================== -->
+
+        <header class="main-header">
+
+            <div class="brand-section">
+
+                <div class="brand-icon">
+                    VA
+                </div>
+
+                <div>
+
+                    <h1>Visitor & Access Management</h1>
+
+                    <p>
+                        Secure Visitor Registration & Access Tracking
+                    </p>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =========================================================
+             ROLE SELECTION
+        ========================================================== -->
+
+        <section
+            id="roleSelection"
+            class="card role-card">
+
+            <div class="section-heading">
+
+                <span class="small-label">
+                    GET STARTED
+                </span>
+
+                <h2>
+                    Welcome
+                </h2>
+
+                <p>
+                    Choose how you want to access the system.
+                </p>
+
+            </div>
+
+
+            <div class="role-options">
+
+
+                <!-- VISITOR -->
+
+                <button
+                    type="button"
+                    class="role-option visitor-option"
+                    onclick="showVisitorPortal()">
+
+                    <div class="role-icon">
+                        👤
+                    </div>
+
+                    <div class="role-text">
+
+                        <h3>
+                            I'm a Visitor
+                        </h3>
+
+                        <p>
+                            Register your visit and submit a request.
+                        </p>
+
+                    </div>
+
+                    <span class="role-arrow">
+                        →
+                    </span>
+
+                </button>
+
+
+
+                <!-- EMPLOYEE -->
+
+                <button
+                    type="button"
+                    class="role-option employee-option"
+                    onclick="showEmployeeLogin()">
+
+                    <div class="role-icon">
+                        🛡️
+                    </div>
+
+                    <div class="role-text">
+
+                        <h3>
+                            Employee / Staff
+                        </h3>
+
+                        <p>
+                            Login to manage visitor requests.
+                        </p>
+
+                    </div>
+
+                    <span class="role-arrow">
+                        →
+                    </span>
+
+                </button>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =========================================================
+             VISITOR PORTAL
+        ========================================================== -->
+
+        <section
+            id="visitorPortal"
+            class="card hidden">
+
+
+            <div class="portal-header">
+
+                <div>
+
+                    <span class="small-label">
+                        VISITOR PORTAL
+                    </span>
+
+                    <h2>
+                        Register Your Visit
+                    </h2>
+
+                    <p>
+                        Enter your details to send a visit request.
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="back-button"
+                    onclick="showRoleSelection()">
+
+                    ← Back
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 VISITOR REGISTRATION FORM
+            ====================================================== -->
+
+            <form id="visitorForm">
+
+
+                <div class="form-group">
+
+                    <label for="name">
+                        Visitor Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="name"
+                        placeholder="Enter your full name"
+                        required>
+
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="Enter your email"
+                        required>
+
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <label for="phone">
+                        Phone Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="phone"
+                        placeholder="Enter your phone number"
+                        required>
+
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <label for="purpose">
+                        Purpose of Visit
+                    </label>
+
+                    <input
+                        type="text"
+                        id="purpose"
+                        placeholder="Example: Meeting, Interview, Delivery"
+                        required>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     EMPLOYEE SELECTION
+                ================================================== -->
+
+                <div class="form-group">
+
+                    <label for="personToMeet">
+                        Person to Meet
+                    </label>
+
+                    <select
+                        id="personToMeet"
+                        required>
+
+                        <option
+                            value=""
+                            disabled
+                            selected>
+
+                            Loading employees...
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <button
+                    type="submit"
+                    class="primary-button">
+
+                    Submit Visit Request
+
+                </button>
+
+
+            </form>
+
+
+
+            <!-- =====================================================
+                 REGISTRATION MESSAGE
+            ====================================================== -->
+
+            <div
+                id="message"
+                class="message hidden">
+            </div>
+
+
+
+            <!-- =====================================================
+                 REQUEST ID
+            ====================================================== -->
+
+            <div
+                id="requestIdBox"
+                class="visitor-info-box hidden">
+
+                <div class="info-icon">
+                    #
+                </div>
+
+                <div>
+
+                    <strong>
+                        Your Request ID
+                    </strong>
+
+                    <p>
+                        Your request has been submitted.
+                    </p>
+
+                    <h3 id="generatedRequestId">
+                        -
+                    </h3>
+
+                    <p>
+                        Save this ID to check your request status later.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 WHAT HAPPENS NEXT
+            ====================================================== -->
+
+            <div class="visitor-info-box">
+
+                <div class="info-icon">
+                    ✓
+                </div>
+
+                <div>
+
+                    <strong>
+                        What happens next?
+                    </strong>
+
+                    <p>
+                        Your request will be sent to the employee
+                        you want to meet for approval.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 STATUS TRACKER
+            ====================================================== -->
+
+            <div class="status-tracker">
+
+                <span class="small-label">
+                    REQUEST STATUS
+                </span>
+
+                <h2>
+                    Check Your Visit Status
+                </h2>
+
+                <p>
+                    Enter your Request ID to see the latest status.
+                </p>
+
+
+
+                <div class="form-group">
+
+                    <label for="statusRequestId">
+                        Request ID
+                    </label>
+
+                    <input
+                        type="number"
+                        id="statusRequestId"
+                        placeholder="Enter your Request ID">
+
+                </div>
+
+
+
+                <button
+                    type="button"
+                    class="primary-button"
+                    onclick="checkRequestStatus()">
+
+                    Check Status
+
+                </button>
+
+
+
+                <div
+                    id="statusMessage"
+                    class="message hidden">
+                </div>
+
+
+
+                <div
+                    id="statusResult"
+                    class="visitor-info-box hidden">
+
+                    <div class="info-icon">
+                        ✓
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Request Details
+                        </strong>
+
+                        <p>
+                            Request ID:
+                            <span id="statusId"></span>
+                        </p>
+
+                        <p>
+                            Visitor:
+                            <span id="statusName"></span>
+                        </p>
+
+                        <p>
+                            Person to Meet:
+                            <span id="statusPerson"></span>
+                        </p>
+
+                        <p>
+                            Purpose:
+                            <span id="statusPurpose"></span>
+                        </p>
+
+                        <p>
+                            Status:
+                            <strong id="statusValue"></strong>
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =========================================================
+             EMPLOYEE LOGIN
+        ========================================================== -->
+
+        <section
+            id="employeeLogin"
+            class="card login-card hidden">
+
+
+            <div class="portal-header">
+
+                <div>
+
+                    <span class="small-label">
+                        STAFF PORTAL
+                    </span>
+
+                    <h2>
+                        Employee Login
+                    </h2>
+
+                    <p>
+                        Login to manage your visitor requests.
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="back-button"
+                    onclick="showRoleSelection()">
+
+                    ← Back
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 LOGIN FORM
+            ====================================================== -->
+
+            <form id="loginForm">
+
+
+                <div class="form-group">
+
+                    <label for="employeeId">
+                        Employee ID
+                    </label>
+
+                    <input
+                        type="text"
+                        id="employeeId"
+                        placeholder="Enter employee ID"
+                        autocomplete="off"
+                        required>
+
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <label for="employeePassword">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="employeePassword"
+                        placeholder="Enter password"
+                        autocomplete="new-password"
+                        required>
+
+                </div>
+
+
+
+                <div
+                    id="loginMessage"
+                    class="message error hidden">
+                </div>
+
+
+
+                <button
+                    type="submit"
+                    class="primary-button">
+
+                    Login to Workspace
+
+                </button>
+
+
+            </form>
+
+
+        </section>
+
+
+
+        <!-- =========================================================
+             EMPLOYEE WORKSPACE
+        ========================================================== -->
+
+        <section
+            id="employeeWorkspace"
+            class="hidden">
+
+
+            <!-- =====================================================
+                 WORKSPACE HEADER
+            ====================================================== -->
+
+            <div class="workspace-header">
+
+                <div>
+
+                    <span class="small-label">
+                        EMPLOYEE WORKSPACE
+                    </span>
+
+                    <h2>
+                        Welcome,
+                        <span id="employeeName">
+                            Employee
+                        </span>
+                    </h2>
+
+                    <p>
+                        Review and manage visitor requests.
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="logout-button"
+                    onclick="logoutEmployee()">
+
+                    Logout
+
+                </button>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 STATISTICS
+            ====================================================== -->
+
+            <div class="stats-grid">
+
+
+                <div class="stat-card">
+
+                    <span>
+                        Pending Requests
+                    </span>
+
+                    <strong id="pendingCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+
+                <div class="stat-card">
+
+                    <span>
+                        Approved
+                    </span>
+
+                    <strong id="approvedCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+
+                <div class="stat-card">
+
+                    <span>
+                        Rejected
+                    </span>
+
+                    <strong id="rejectedCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 ACTIVE REQUESTS
+            ====================================================== -->
+
+            <div class="card requests-card">
+
+                <div class="requests-header">
+
+                    <div>
+
+                        <span class="small-label">
+                            REQUEST MANAGEMENT
+                        </span>
+
+                        <h2>
+                            Active Visit Requests
+                        </h2>
+
+                        <p>
+                            Only requests waiting for your decision are shown here.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="refresh-button"
+                        onclick="loadEmployeeRequests()">
+
+                        Refresh
+
+                    </button>
+
+                </div>
+
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>ID</th>
+
+                                <th>Visitor</th>
+
+                                <th>Email</th>
+
+                                <th>Phone</th>
+
+                                <th>Purpose</th>
+
+                                <th>Status</th>
+
+                                <th>Actions</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="employeeTableBody">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 EMPTY ACTIVE REQUEST MESSAGE
+            ====================================================== -->
+
+            <div
+                id="noPendingRequests"
+                class="visitor-info-box hidden">
+
+                <div class="info-icon">
+                    ✓
+                </div>
+
+                <div>
+
+                    <strong>
+                        No active requests
+                    </strong>
+
+                    <p>
+                        You have no pending visitor requests requiring action.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 REQUEST HISTORY
+            ====================================================== -->
+
+            <div
+                id="requestHistorySection"
+                class="card requests-card history-card">
+
+
+                <div class="requests-header">
+
+                    <div>
+
+                        <span class="small-label">
+                            HISTORY
+                        </span>
+
+                        <h2>
+                            Request History
+                        </h2>
+
+                        <p>
+                            Previously approved and rejected visitor requests.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>ID</th>
+
+                                <th>Visitor</th>
+
+                                <th>Email</th>
+
+                                <th>Phone</th>
+
+                                <th>Purpose</th>
+
+                                <th>Status</th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="historyTableBody">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =====================================================
+                 EMPTY HISTORY MESSAGE
+            ====================================================== -->
+
+            <div
+                id="noHistoryRequests"
+                class="visitor-info-box hidden">
+
+                <div class="info-icon">
+                    ℹ
+                </div>
+
+                <div>
+
+                    <strong>
+                        No request history
+                    </strong>
+
+                    <p>
+                        Approved and rejected requests will appear here.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+    </div>
+
+
+
+    <!-- =========================================================
+         JAVASCRIPT
+    ========================================================== -->
+
+    <script src="script.js"></script>
+
+
+</body>
+
+</html>
